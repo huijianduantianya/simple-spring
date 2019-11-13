@@ -79,7 +79,7 @@ public class JCDispatcherServlet extends HttpServlet{
 		//暫時將參數名稱寫死
 		Map<String, String[]> params = req.getParameterMap();
 		System.err.println(params.get("name")[0]);
-		method.invoke(ioc.get(beanName), new Object[]{params.get("name")[0]});
+		method.invoke(ioc.get(beanName), new Object[]{req, resp, params.get("name")[0]});
 	}
 
 	@Override
@@ -159,7 +159,7 @@ public class JCDispatcherServlet extends HttpServlet{
 				//TODO 对类名首字母小写的判断
 				String beanName = autowired.value().trim();
 				if("".equals(beanName)) {
-					beanName = field.getType().getName();
+					beanName = toLowerFirstCase(field.getType().getSimpleName());
 				}
 				
 				//如果是public以外的修饰符，只要加了@Autowired注解，都要赋值
