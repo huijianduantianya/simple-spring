@@ -79,11 +79,11 @@ public class JCDispatcherServlet extends HttpServlet{
 		//暫時將參數名稱寫死
 		Map<String, String[]> params = req.getParameterMap();
 		System.err.println(params.get("name")[0]);
-		method.invoke(ioc.get(beanName), new Object[]{req, resp, params.get("name")[0]});
+		method.invoke(ioc.get(beanName), req, resp, params.get("name")[0]);
 	}
 
 	@Override
-	public void init(ServletConfig config) throws ServletException{
+	public void init(ServletConfig config) {
 		
 		//1、加载配置文件
 		doLoanConfig(config.getInitParameter("contextConfigLocation"));
@@ -170,7 +170,7 @@ public class JCDispatcherServlet extends HttpServlet{
 					//反射，动态给字段赋值
 					field.set(entry.getValue(), ioc.get(beanName));
 				}catch(Exception e){
-					continue;
+					System.err.println("set value error!");
 				}
 			}
 		}
@@ -213,8 +213,6 @@ public class JCDispatcherServlet extends HttpServlet{
 						}
 						ioc.put(toLowerFirstCase(ca.getName()), instance);
 					}
-				}else {
-					continue;
 				}
 				
 			}
