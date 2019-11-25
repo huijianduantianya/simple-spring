@@ -23,9 +23,30 @@ public class TestController {
 		try {
 			resp.getWriter().write(testService.sayHello(name));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
+
+	@JCRequestMapping("/add")
+	public void add(HttpServletRequest req, HttpServletResponse resp,@JCRequestParam("a") Integer a,@JCRequestParam("b") Integer b){
+		try {
+			resp.getWriter().write(a + " + "+b+" = " + (a + b));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@JCRequestMapping("/sub")
+	public void sub(HttpServletRequest req, HttpServletResponse resp,@JCRequestParam("a") Double a,@JCRequestParam("b") Double b){
+		try {
+			resp.getWriter().write(a + " - "+b+" = " + (a - b));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@JCRequestMapping("/remove")
+	public String remove(@JCRequestParam("id") String id){
+		return id;
+	}
 }

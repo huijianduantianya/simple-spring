@@ -3,6 +3,7 @@ package com.jxufe.simplespring.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -20,10 +21,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.jxufe.simplespring.annotation.JCAutowired;
-import com.jxufe.simplespring.annotation.JCController;
-import com.jxufe.simplespring.annotation.JCRequestMapping;
-import com.jxufe.simplespring.annotation.JCService;
+import com.jxufe.simplespring.annotation.*;
 
 public class JCDispatcherServlet extends HttpServlet{
 	
@@ -40,8 +38,7 @@ public class JCDispatcherServlet extends HttpServlet{
 	//IOC容器.为了简化程序，暂时不考虑ConcurrentHashMap
 	private Map<String, Object> ioc = new HashMap<>();
 	
-	//保存url和method的对应关系
-	private Map<String, Method> handlerMapping = new HashMap<>();
+	private List<HandlerMapping> handlerMapping = new ArrayList<>();
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -60,26 +57,81 @@ public class JCDispatcherServlet extends HttpServlet{
 	}
 
 	private void doDispatch(HttpServletRequest req, HttpServletResponse resp) throws Exception{
+
+
+		HandlerMapping handlerMapping = getHandler(req);
+		if(null == handlerMapping){
+			resp.getWriter().write("404 not found!");
+			return;
+		}
+
+		//获取方法的形参列表
+		Class<?>[] paramTypes = handlerMapping.getParamTypes();
+
+		Object[] paramValues = new Object[paramTypes.length];
+
+		Map<String, String[]> params = req.getParameterMap();
+
+		for (Entry<String, String[]> param : params.entrySet()) {
+			String value = Arrays.toString(param.getValue()).replaceAll("\\[|\\]","")
+					.replaceAll("\\s", ",");
+
+			if(!handlerMapping.paramIndexMapping.containsKey(param.getKey())){
+				continue;
+			}
+
+			int index = handlerMapping.paramIndexMapping.get(param.getKey());
+			paramValues[index] = convert(paramTypes[index], value);
+		}
+
+		if(handlerMapping.paramIndexMapping.containsKey(HttpServletRequest.class.getName())){
+			int reqIndex = handlerMapping.paramIndexMapping.get(HttpServletRequest.class.getName());
+			paramValues[reqIndex] = req;
+		}
+
+		if(handlerMapping.paramIndexMapping.containsKey(HttpServletResponse.class.getName())){
+			int respIndex = handlerMapping.paramIndexMapping.get(HttpServletResponse.class.getName());
+			paramValues[respIndex] = resp;
+		}
+
+		Object returnValue = handlerMapping.method.invoke(handlerMapping.controller, paramValues);
+		if(null == returnValue || returnValue instanceof Void){
+			return;
+		}
+		resp.getWriter().write(returnValue.toString());
+	}
+
+	private HandlerMapping getHandler(HttpServletRequest req) {
+		if(handlerMapping.isEmpty()){
+			return null;
+		}
+
 		//絕對路徑
 		String url = req.getRequestURI();
 		//處理成相對路徑
 		String contextPath = req.getContextPath();
 		url = url.replaceAll(contextPath, "").replaceAll("/+", "/");
-		if(!this.handlerMapping.containsKey(url)){
-			resp.getWriter().write("404 not found!");
-			return;
+
+		for (HandlerMapping mapping : this.handlerMapping) {
+			if(mapping.getUrl().equals(url)){
+				return mapping;
+			}
 		}
-		
-		Method method = this.handlerMapping.get(url);
-		//投機取巧的方式
-		//通過反射拿到method所在class，拿到class之後在拿到class的名稱
-		//在調用toLowerFirstCase獲得beanName
-		String beanName = toLowerFirstCase(method.getDeclaringClass().getSimpleName()) ;
-		
-		//暫時將參數名稱寫死
-		Map<String, String[]> params = req.getParameterMap();
-		System.err.println(params.get("name")[0]);
-		method.invoke(ioc.get(beanName), req, resp, params.get("name")[0]);
+		return null;
+	}
+
+	//url传过来的参数都是string类型的
+	//只需把String转换为任意类型即可
+	private Object convert(Class<?> type, String value){
+		if(Integer.class == type){
+			return Integer.valueOf(value);
+		}
+		if(Double.class == type){
+			return Double.valueOf(value);
+		}
+		//还有其他类型的话，继续加if
+		//可以使用策略模式，暂不实现
+		return value;
 	}
 
 	@Override
@@ -132,8 +184,9 @@ public class JCDispatcherServlet extends HttpServlet{
 				JCRequestMapping requestMapping = method.getAnnotation(JCRequestMapping.class);
 				//用正则，将多个斜杠改成一个
 				String url = (baseUrl + "/" + requestMapping.value()).replaceAll("/+", "/");
-				
-				handlerMapping.put(url, method);
+
+				this.handlerMapping.add(new HandlerMapping(url, method, entry.getValue()));
+//				handlerMapping.put(url, method);
 				System.out.println("Mapped:" + url +"," + method);
 			}
 			
@@ -264,6 +317,100 @@ public class JCDispatcherServlet extends HttpServlet{
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	public class HandlerMapping {
+		private String url;
+		private Method method;
+		private Object controller;
+
+		private Class<?>[] paramTypes;
+
+		//形参列表
+		//参数名字作为key，参数顺序作为值
+		private Map<String, Integer> paramIndexMapping;
+
+		public HandlerMapping(String url, Method method, Object controller) {
+			this.url = url;
+			this.method = method;
+			this.controller = controller;
+
+			paramTypes = method.getParameterTypes();
+
+			paramIndexMapping = new HashMap<>();
+			putParamIndexMapping(method);
+		}
+
+		private void putParamIndexMapping(Method method){
+			//拿到方法上的注解，得到一个二维数组
+			//因为一个参数可以有多个注解，而一个方法又有多个参数
+			Annotation[][] pa = method.getParameterAnnotations();
+
+			for(int i = 0; i < pa.length; i++){
+				for(Annotation a : pa[i]) {
+					if (a instanceof JCRequestParam) {
+						//拿到参数名称，去localhost:8080/simplespring/jxufe/sayHello?name=shenzhen匹配
+						String paramName = ((JCRequestParam) a).value();
+						//从req拿到参数表中去找对应的key
+						if (!"".equals(paramName.trim())) {
+							paramIndexMapping.put(paramName, i);
+						}
+					}
+				}
+			}
+
+
+			//提取方法中的request和response参数
+			Class<?>[] parameterTypes = method.getParameterTypes();
+
+			for (int i = 0; i < parameterTypes.length; i++) {
+				Class<?> type = parameterTypes[i];
+				//不能用instanceof，parameterTypes不是实参，是形参
+				if (type == HttpServletRequest.class || type == HttpServletResponse.class) {
+					paramIndexMapping.put(type.getName(), i);
+				}
+			}
+		}
+
+		public String getUrl() {
+			return url;
+		}
+
+		public void setUrl(String url) {
+			this.url = url;
+		}
+
+		public Method getMethod() {
+			return method;
+		}
+
+		public void setMethod(Method method) {
+			this.method = method;
+		}
+
+		public Object getController() {
+			return controller;
+		}
+
+		public void setController(Object controller) {
+			this.controller = controller;
+		}
+
+		public Map<String, Integer> getParamIndexMapping() {
+			return paramIndexMapping;
+		}
+
+		public void setParamIndexMapping(Map<String, Integer> paramIndexMapping) {
+			this.paramIndexMapping = paramIndexMapping;
+		}
+
+		public Class<?>[] getParamTypes() {
+			return paramTypes;
+		}
+
+		public void setParamTypes(Class<?>[] paramTypes) {
+			this.paramTypes = paramTypes;
 		}
 	}
 
