@@ -21,23 +21,23 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.jxufe.simplespring.annotation.*;
+import com.jxufe.simplespring.framwork.annotation.*;
 
 public class JCDispatcherServlet extends HttpServlet{
-	
+
 	/**
-	 * ±£´æÅäÖÃÎÄ¼şµÄÄÚÈİ
+	 * ä¿å­˜é…ç½®æ–‡ä»¶çš„å†…å®¹
 	 */
 	private Properties contextConfig = new Properties();
-	
+
 	/**
-	 * ±£´æÉ¨Ãèµ½µÄÀàÃû
+	 * ä¿å­˜æ‰«æåˆ°çš„ç±»å
 	 */
 	private List<String> classNameList = new ArrayList<>();
-	
-	//IOCÈİÆ÷.ÎªÁË¼ò»¯³ÌĞò£¬ÔİÊ±²»¿¼ÂÇConcurrentHashMap
+
+	//IOCå®¹å™¨.ä¸ºäº†ç®€åŒ–ç¨‹åºï¼Œæš‚æ—¶ä¸è€ƒè™‘ConcurrentHashMap
 	private Map<String, Object> ioc = new HashMap<>();
-	
+
 	private List<HandlerMapping> handlerMapping = new ArrayList<>();
 
 	@Override
@@ -47,7 +47,7 @@ public class JCDispatcherServlet extends HttpServlet{
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		//6¡¢µ÷ÓÃ£¬ÔËĞĞ½×¶Î
+		//6ã€è°ƒç”¨ï¼Œè¿è¡Œé˜¶æ®µ
 		try{
 			doDispatch(req, resp);
 		}catch(Exception e){
@@ -65,7 +65,7 @@ public class JCDispatcherServlet extends HttpServlet{
 			return;
 		}
 
-		//»ñÈ¡·½·¨µÄĞÎ²ÎÁĞ±í
+		//è·å–æ–¹æ³•çš„å½¢å‚åˆ—è¡¨
 		Class<?>[] paramTypes = handlerMapping.getParamTypes();
 
 		Object[] paramValues = new Object[paramTypes.length];
@@ -106,9 +106,9 @@ public class JCDispatcherServlet extends HttpServlet{
 			return null;
 		}
 
-		//½^Œ¦Â·½
+		//çµ•å°è·¯å¾‘
 		String url = req.getRequestURI();
-		//ÌÀí³ÉÏàŒ¦Â·½
+		//è™•ç†æˆç›¸å°è·¯å¾‘
 		String contextPath = req.getContextPath();
 		url = url.replaceAll(contextPath, "").replaceAll("/+", "/");
 
@@ -120,8 +120,8 @@ public class JCDispatcherServlet extends HttpServlet{
 		return null;
 	}
 
-	//url´«¹ıÀ´µÄ²ÎÊı¶¼ÊÇstringÀàĞÍµÄ
-	//Ö»Ğè°ÑString×ª»»ÎªÈÎÒâÀàĞÍ¼´¿É
+	//urlä¼ è¿‡æ¥çš„å‚æ•°éƒ½æ˜¯stringç±»å‹çš„
+	//åªéœ€æŠŠStringè½¬æ¢ä¸ºä»»æ„ç±»å‹å³å¯
 	private Object convert(Class<?> type, String value){
 		if(Integer.class == type){
 			return Integer.valueOf(value);
@@ -129,69 +129,69 @@ public class JCDispatcherServlet extends HttpServlet{
 		if(Double.class == type){
 			return Double.valueOf(value);
 		}
-		//»¹ÓĞÆäËûÀàĞÍµÄ»°£¬¼ÌĞø¼Óif
-		//¿ÉÒÔÊ¹ÓÃ²ßÂÔÄ£Ê½£¬Ôİ²»ÊµÏÖ
+		//è¿˜æœ‰å…¶ä»–ç±»å‹çš„è¯ï¼Œç»§ç»­åŠ if
+		//å¯ä»¥ä½¿ç”¨ç­–ç•¥æ¨¡å¼ï¼Œæš‚ä¸å®ç°
 		return value;
 	}
 
 	@Override
 	public void init(ServletConfig config) {
-		
-		//1¡¢¼ÓÔØÅäÖÃÎÄ¼ş
+
+		//1ã€åŠ è½½é…ç½®æ–‡ä»¶
 		doLoanConfig(config.getInitParameter("contextConfigLocation"));
-		
-		//2¡¢É¨ÃèÏà¹ØµÄÀà
+
+		//2ã€æ‰«æç›¸å…³çš„ç±»
 		doScanner(contextConfig.getProperty("scanPackage"));
-		
-		//3¡¢³õÊ¼»¯É¨Ãèµ½µÄÀà£¬²¢ÇÒ½«ËüÃÇ·ÅÈëICOÈİÆ÷Ö®ÖĞ
+
+		//3ã€åˆå§‹åŒ–æ‰«æåˆ°çš„ç±»ï¼Œå¹¶ä¸”å°†å®ƒä»¬æ”¾å…¥ICOå®¹å™¨ä¹‹ä¸­
 		doInstance();
-		
-		//4¡¢Íê³ÉÒÀÀµ×¢Èë
+
+		//4ã€å®Œæˆä¾èµ–æ³¨å…¥
 		doAutowired();
-		
-		//5¡¢³õÊ¼»¯HandlerMapping
+
+		//5ã€åˆå§‹åŒ–HandlerMapping
 		initHandlerMapping();
-		
+
 		System.out.println("111");
-		
+
 	}
 
-	//³õÊ¼»¯urlºÍmethodµÄ¶ÔÓ¦¹ØÏµ
+	//åˆå§‹åŒ–urlå’Œmethodçš„å¯¹åº”å…³ç³»
 	private void initHandlerMapping() {
 		if(ioc.isEmpty()){
 			return;
 		}
-		
+
 		for(Entry<String, Object> entry: ioc.entrySet()){
 			Class<?> clazz = entry.getValue().getClass();
-			
+
 			if(!clazz.isAnnotationPresent(JCController.class)){
 				continue;
 			}
-			
-			//»ñÈ¡Ğ´ÔÚÀàÃûÉÏµÄ  url
+
+			//è·å–å†™åœ¨ç±»åä¸Šçš„  url
 			String baseUrl = "";
 			if(clazz.isAnnotationPresent(JCRequestMapping.class)){
 				JCRequestMapping requestMapping = clazz.getAnnotation(JCRequestMapping.class);
 				baseUrl = requestMapping.value();
 			}
-			
-			//»ñÈ¡Ğ´ÔÚ·½·¨ÉÏµÄurl
+
+			//è·å–å†™åœ¨æ–¹æ³•ä¸Šçš„url
 			for(Method method : clazz.getMethods()){
 				if(!method.isAnnotationPresent(JCRequestMapping.class)){
 					continue;
 				}
 				JCRequestMapping requestMapping = method.getAnnotation(JCRequestMapping.class);
-				//ÓÃÕıÔò£¬½«¶à¸öĞ±¸Ü¸Ä³ÉÒ»¸ö
+				//ç”¨æ­£åˆ™ï¼Œå°†å¤šä¸ªæ–œæ æ”¹æˆä¸€ä¸ª
 				String url = (baseUrl + "/" + requestMapping.value()).replaceAll("/+", "/");
 
 				this.handlerMapping.add(new HandlerMapping(url, method, entry.getValue()));
 //				handlerMapping.put(url, method);
 				System.out.println("Mapped:" + url +"," + method);
 			}
-			
+
 		}
-				
+
 	}
 
 	private void doAutowired() {
@@ -199,28 +199,28 @@ public class JCDispatcherServlet extends HttpServlet{
 			return;
 		}
 		for(Map.Entry<String, Object> entry : ioc.entrySet()) {
-			//»ñÈ¡ËùÓĞµÄ£¬ÌØ¶¨µÄ×Ö¶Î£¬°üÀ¨private/protected/default
+			//è·å–æ‰€æœ‰çš„ï¼Œç‰¹å®šçš„å­—æ®µï¼ŒåŒ…æ‹¬private/protected/default
 			Field[] fields =  entry.getValue().getClass().getDeclaredFields();
 			for(Field field : fields) {
 				if(!field.isAnnotationPresent(JCAutowired.class)) {
 					continue;
 				}
-				
+
 				JCAutowired autowired = field.getAnnotation(JCAutowired.class);
-				
-				//Èç¹ûÓÃ»§Ã»ÓĞ×Ô¶¨ÒåbeanName£¬Ä¬ÈÏ¸ù¾İÀàĞÍ×¢Èë
-				//TODO ¶ÔÀàÃûÊ××ÖÄ¸Ğ¡Ğ´µÄÅĞ¶Ï
+
+				//å¦‚æœç”¨æˆ·æ²¡æœ‰è‡ªå®šä¹‰beanNameï¼Œé»˜è®¤æ ¹æ®ç±»å‹æ³¨å…¥
+				//TODO å¯¹ç±»åé¦–å­—æ¯å°å†™çš„åˆ¤æ–­
 				String beanName = autowired.value().trim();
 				if("".equals(beanName)) {
 					beanName = toLowerFirstCase(field.getType().getSimpleName());
 				}
-				
-				//Èç¹ûÊÇpublicÒÔÍâµÄĞŞÊÎ·û£¬Ö»Òª¼ÓÁË@Autowired×¢½â£¬¶¼Òª¸³Öµ
-				//±©Á¦·ÃÎÊ
+
+				//å¦‚æœæ˜¯publicä»¥å¤–çš„ä¿®é¥°ç¬¦ï¼Œåªè¦åŠ äº†@Autowiredæ³¨è§£ï¼Œéƒ½è¦èµ‹å€¼
+				//æš´åŠ›è®¿é—®
 				field.setAccessible(true);
-				
+
 				try{
-					//·´Éä£¬¶¯Ì¬¸ø×Ö¶Î¸³Öµ
+					//åå°„ï¼ŒåŠ¨æ€ç»™å­—æ®µèµ‹å€¼
 					field.set(entry.getValue(), ioc.get(beanName));
 				}catch(Exception e){
 					System.err.println("set value error!");
@@ -236,30 +236,30 @@ public class JCDispatcherServlet extends HttpServlet{
 		try {
 			for(String className : classNameList) {
 				Class<?> clazz = Class.forName(className);
-				//ÄÄĞ©ÀàĞèÒª³õÊ¼»¯£¿
-				//¼ÓÁË×¢½âµÄÀà²Å³õÊ¼»¯£¬ÈçºÎÅĞ¶Ï£¿
-				//ÎªÁË¼ò»¯´úÂëÂß¼­£¬¾Í²»¾ÙÀıÆäËû×¢½âÁË
-				//¼ÙÉèservice´æÔÚ×Ô¼ºÃüÃûµÄÇé¿ö
+				//å“ªäº›ç±»éœ€è¦åˆå§‹åŒ–ï¼Ÿ
+				//åŠ äº†æ³¨è§£çš„ç±»æ‰åˆå§‹åŒ–ï¼Œå¦‚ä½•åˆ¤æ–­ï¼Ÿ
+				//ä¸ºäº†ç®€åŒ–ä»£ç é€»è¾‘ï¼Œå°±ä¸ä¸¾ä¾‹å…¶ä»–æ³¨è§£äº†
+				//å‡è®¾serviceå­˜åœ¨è‡ªå·±å‘½åçš„æƒ…å†µ
 				if(clazz.isAnnotationPresent(JCController.class)) {
 					Object instance = clazz.newInstance();
-					//key classnameÊ××ÖÄ¸Ğ¡Ğ´
+					//key classnameé¦–å­—æ¯å°å†™
 					String beanName = toLowerFirstCase(clazz.getSimpleName());
 					ioc.put(beanName, instance);
 				}else if(clazz.isAnnotationPresent(JCService.class)) {
 					JCService service = clazz.getAnnotation(JCService.class);
-					
-					
-					//1.×Ô¼ºÃüÃûnameµÄÇé¿ö
+
+
+					//1.è‡ªå·±å‘½ånameçš„æƒ…å†µ
 					String beanName = service.value();
-					
+
 					if("".equals(beanName.trim())) {
-						//2.Ä¬ÈÏÀàÃûÊ××ÖÄ¸Ğ¡Ğ´
+						//2.é»˜è®¤ç±»åé¦–å­—æ¯å°å†™
 						beanName = toLowerFirstCase(clazz.getSimpleName());
 					}
-					
+
 					Object instance = clazz.newInstance();
 					ioc.put(beanName, instance);
-					//3.¸ù¾İÀàĞÍ×Ô¶¯¸³Öµ£¬½«¸Ã½Ó¿ÚµÄÊµÏÖÀàÑ­»·±éÀú£¬¶à¸öÊµÏÖÀàÔİÊ±²»´¦Àí
+					//3.æ ¹æ®ç±»å‹è‡ªåŠ¨èµ‹å€¼ï¼Œå°†è¯¥æ¥å£çš„å®ç°ç±»å¾ªç¯éå†ï¼Œå¤šä¸ªå®ç°ç±»æš‚æ—¶ä¸å¤„ç†
 					for(Class<?>  ca : clazz.getInterfaces() ) {
 						if(ioc.containsKey(toLowerFirstCase(ca.getName()))) {
 							throw new Exception("");
@@ -267,12 +267,12 @@ public class JCDispatcherServlet extends HttpServlet{
 						ioc.put(toLowerFirstCase(ca.getName()), instance);
 					}
 				}
-				
+
 			}
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	private String toLowerFirstCase(String simpleName) {
@@ -281,14 +281,14 @@ public class JCDispatcherServlet extends HttpServlet{
 		return String.valueOf(chars);
 	}
 
-	//É¨Ãè³öÏà¹ØµÄÀà
+	//æ‰«æå‡ºç›¸å…³çš„ç±»
 	private void doScanner(String scanPackage) {
-		//scanPackage=com.jxufe.simplespring ´æ´¢µÄÊÇ°üÂ·¾¶		
+		//scanPackage=com.jxufe.simplespring å­˜å‚¨çš„æ˜¯åŒ…è·¯å¾„
 		URL url = this.getClass().getClassLoader().getResource("/" + scanPackage.replaceAll("\\.","/"));
 		File classPath = new File(url.getFile());
 		for(File file : classPath.listFiles()) {
 			if(file.isDirectory()) {
-				//ÊÇÎÄ¼ş¼Ğ£¬½øĞĞµİ¹é
+				//æ˜¯æ–‡ä»¶å¤¹ï¼Œè¿›è¡Œé€’å½’
 				doScanner(scanPackage + "." + file.getName());
 			}else {
 				if(!file.getName().endsWith(".class")) {
@@ -300,10 +300,10 @@ public class JCDispatcherServlet extends HttpServlet{
 		}
 	}
 
-	
+
 	private void doLoanConfig(String contextConfigLocation) {
-		//´ÓÀàÂ·¾¶ÏÂÕÒµ½SpringÖ÷ÅäÖÃÎÄ¼şËùÔÚµÄÎÄ¼ş
-		//²¢ÇÒ½«Æä¶ÁÈ¡³öÀ´·Åµ½PropertiesÖĞ
+		//ä»ç±»è·¯å¾„ä¸‹æ‰¾åˆ°Springä¸»é…ç½®æ–‡ä»¶æ‰€åœ¨çš„æ–‡ä»¶
+		//å¹¶ä¸”å°†å…¶è¯»å–å‡ºæ¥æ”¾åˆ°Propertiesä¸­
 		InputStream file = this.getClass().getClassLoader().getResourceAsStream(contextConfigLocation);
 		try {
 			contextConfig.load(file);
@@ -327,8 +327,8 @@ public class JCDispatcherServlet extends HttpServlet{
 
 		private Class<?>[] paramTypes;
 
-		//ĞÎ²ÎÁĞ±í
-		//²ÎÊıÃû×Ö×÷Îªkey£¬²ÎÊıË³Ğò×÷ÎªÖµ
+		//å½¢å‚åˆ—è¡¨
+		//å‚æ•°åå­—ä½œä¸ºkeyï¼Œå‚æ•°é¡ºåºä½œä¸ºå€¼
 		private Map<String, Integer> paramIndexMapping;
 
 		public HandlerMapping(String url, Method method, Object controller) {
@@ -343,16 +343,16 @@ public class JCDispatcherServlet extends HttpServlet{
 		}
 
 		private void putParamIndexMapping(Method method){
-			//ÄÃµ½·½·¨ÉÏµÄ×¢½â£¬µÃµ½Ò»¸ö¶şÎ¬Êı×é
-			//ÒòÎªÒ»¸ö²ÎÊı¿ÉÒÔÓĞ¶à¸ö×¢½â£¬¶øÒ»¸ö·½·¨ÓÖÓĞ¶à¸ö²ÎÊı
+			//æ‹¿åˆ°æ–¹æ³•ä¸Šçš„æ³¨è§£ï¼Œå¾—åˆ°ä¸€ä¸ªäºŒç»´æ•°ç»„
+			//å› ä¸ºä¸€ä¸ªå‚æ•°å¯ä»¥æœ‰å¤šä¸ªæ³¨è§£ï¼Œè€Œä¸€ä¸ªæ–¹æ³•åˆæœ‰å¤šä¸ªå‚æ•°
 			Annotation[][] pa = method.getParameterAnnotations();
 
 			for(int i = 0; i < pa.length; i++){
 				for(Annotation a : pa[i]) {
 					if (a instanceof JCRequestParam) {
-						//ÄÃµ½²ÎÊıÃû³Æ£¬È¥localhost:8080/simplespring/jxufe/sayHello?name=shenzhenÆ¥Åä
+						//æ‹¿åˆ°å‚æ•°åç§°ï¼Œå»localhost:8080/simplespring/jxufe/sayHello?name=shenzhenåŒ¹é…
 						String paramName = ((JCRequestParam) a).value();
-						//´ÓreqÄÃµ½²ÎÊı±íÖĞÈ¥ÕÒ¶ÔÓ¦µÄkey
+						//ä»reqæ‹¿åˆ°å‚æ•°è¡¨ä¸­å»æ‰¾å¯¹åº”çš„key
 						if (!"".equals(paramName.trim())) {
 							paramIndexMapping.put(paramName, i);
 						}
@@ -361,12 +361,12 @@ public class JCDispatcherServlet extends HttpServlet{
 			}
 
 
-			//ÌáÈ¡·½·¨ÖĞµÄrequestºÍresponse²ÎÊı
+			//æå–æ–¹æ³•ä¸­çš„requestå’Œresponseå‚æ•°
 			Class<?>[] parameterTypes = method.getParameterTypes();
 
 			for (int i = 0; i < parameterTypes.length; i++) {
 				Class<?> type = parameterTypes[i];
-				//²»ÄÜÓÃinstanceof£¬parameterTypes²»ÊÇÊµ²Î£¬ÊÇĞÎ²Î
+				//ä¸èƒ½ç”¨instanceofï¼ŒparameterTypesä¸æ˜¯å®å‚ï¼Œæ˜¯å½¢å‚
 				if (type == HttpServletRequest.class || type == HttpServletResponse.class) {
 					paramIndexMapping.put(type.getName(), i);
 				}

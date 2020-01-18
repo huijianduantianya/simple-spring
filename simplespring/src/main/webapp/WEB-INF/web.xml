@@ -9,7 +9,7 @@
 
 	<servlet>
 		<servlet-name>jcmvc</servlet-name>
-		<servlet-class>com.jxufe.simplespring.servlet.JCDispatcherServlet</servlet-class>
+		<servlet-class>com.jxufe.simplespring.framwork.webmvc.servlet.JCDispatcherServlet</servlet-class>
 		<init-param>
 			<param-name>contextConfigLocation</param-name>
 			<param-value>application.properties</param-value>
