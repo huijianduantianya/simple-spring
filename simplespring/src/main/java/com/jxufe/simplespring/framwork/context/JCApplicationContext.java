@@ -3,6 +3,11 @@ package com.jxufe.simplespring.framwork.context;
 import com.jxufe.simplespring.framwork.annotation.JCAutowired;
 import com.jxufe.simplespring.framwork.annotation.JCController;
 import com.jxufe.simplespring.framwork.annotation.JCService;
+import com.jxufe.simplespring.framwork.aop.JCAopProxy;
+import com.jxufe.simplespring.framwork.aop.JCCglibAopProxy;
+import com.jxufe.simplespring.framwork.aop.JCJdkDynamicAopProxy;
+import com.jxufe.simplespring.framwork.aop.config.JCAopConfig;
+import com.jxufe.simplespring.framwork.aop.support.JCAdvisedSupport;
 import com.jxufe.simplespring.framwork.beans.JCBeanFactory;
 import com.jxufe.simplespring.framwork.beans.JCBeanWrapper;
 import com.jxufe.simplespring.framwork.beans.config.JCBeanDefinition;
@@ -31,11 +36,15 @@ public class JCApplicationContext extends JCDefaultListableBeanFactory implement
 
     public JCApplicationContext(String... configLocations){
         this.configLocations = configLocations;
-        refresh();
+        try {
+            refresh();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void refresh() {
+    public void refresh() throws Exception{
         //1、定位配置文件
         reader = new JCBeanDefinitionReader(configLocations);
 
@@ -63,8 +72,11 @@ public class JCApplicationContext extends JCDefaultListableBeanFactory implement
         }
     }
 
-    private void doRegisterBeanDefinition(List<JCBeanDefinition> beanDefinitions) {
+    private void doRegisterBeanDefinition(List<JCBeanDefinition> beanDefinitions)  throws Exception{
         for(JCBeanDefinition beanDefinition : beanDefinitions){
+            if(super.beanDefinitionMap.containsKey(beanDefinition.getFactoryBeanName())){
+                throw new Exception("The “" + beanDefinition.getFactoryBeanName() + "” is exists!!");
+            }
             super.beanDefinitionMap.put(beanDefinition.getFactoryBeanName(), beanDefinition);
         }
     }
@@ -91,6 +103,9 @@ public class JCApplicationContext extends JCDefaultListableBeanFactory implement
 
         //把这个对象封装到beanWrapper中
         JCBeanWrapper beanWrapper = new JCBeanWrapper(instance);
+
+        //创建一个代理的策略，看是否用CGlib还是用JDK的代理
+
 
         //2.拿到beanWrapper后，保存到beanWrapper IOC容器中去
         this.factoryBeanInstanceCache.put(beanName, beanWrapper);
@@ -120,7 +135,7 @@ public class JCApplicationContext extends JCDefaultListableBeanFactory implement
             JCAutowired autowired = field.getAnnotation(JCAutowired.class);
             String autowiredBeanName = autowired.value().trim();
             if("".equals(autowiredBeanName)){
-                autowiredBeanName = toLowerFirstCase(field.getType().getSimpleName());
+                autowiredBeanName = field.getType().getName();
             }
             //强制访问
             field.setAccessible(true);
@@ -150,6 +165,15 @@ public class JCApplicationContext extends JCDefaultListableBeanFactory implement
             }else{
                 Class<?> clazz = Class.forName(className);
                 instance = clazz.newInstance();
+
+                JCAdvisedSupport config = instantionAopConfig(jcBeanDefinition);
+                config.setTargetClass(clazz);
+                config.setTarget(instance);
+                //符合PointCut的规则的话，就创建代理对象
+                if(config.pointCutMatch()){
+                    instance = createProxy(config).getProxy();
+                }
+
                 this.singletonObjects.put(className, instance);
                 this.singletonObjects.put(jcBeanDefinition.getFactoryBeanName(), instance);
             }
@@ -158,6 +182,26 @@ public class JCApplicationContext extends JCDefaultListableBeanFactory implement
         }
 
         return instance;
+    }
+
+    private JCAopProxy createProxy(JCAdvisedSupport config) {
+        Class targetClass = config.getTargetClass();
+        //这个类有实现其他接口，则使用JDK的动态代理
+        if(targetClass.getInterfaces().length > 0){
+            return new JCJdkDynamicAopProxy(config);
+        }
+        return new JCCglibAopProxy(config);
+    }
+
+    private JCAdvisedSupport instantionAopConfig(JCBeanDefinition jcBeanDefinition) {
+        JCAopConfig config = new JCAopConfig();
+        config.setPointCut(this.reader.getConfig().getProperty("pointCut"));
+        config.setAspectClass(this.reader.getConfig().getProperty("aspectClass"));
+        config.setAspectBefore(this.reader.getConfig().getProperty("aspectBefore"));
+        config.setAspectAfter(this.reader.getConfig().getProperty("aspectAfter"));
+        config.setAspectAfterThrow(this.reader.getConfig().getProperty("aspectAfterThrow"));
+        config.setAspectAfterThrowingName(this.reader.getConfig().getProperty("aspectAfterThrowingName"));
+        return new JCAdvisedSupport(config);
     }
 
     public String[] getBeanDefinitionNames(){
@@ -172,9 +216,9 @@ public class JCApplicationContext extends JCDefaultListableBeanFactory implement
         return this.reader.getConfig();
     }
 
-    private String toLowerFirstCase(String simpleName) {
+    /*private String toLowerFirstCase(String simpleName) {
         char [] chars = simpleName.toCharArray();
         chars[0] = Character.toLowerCase(chars[0]);
         return String.valueOf(chars);
-    }
+    }*/
 }

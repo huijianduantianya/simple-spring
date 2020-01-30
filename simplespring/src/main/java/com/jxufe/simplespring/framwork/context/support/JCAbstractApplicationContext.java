@@ -5,6 +5,6 @@ package com.jxufe.simplespring.framwork.context.support;
  */
 public abstract class JCAbstractApplicationContext {
 
-    public void refresh(){}
+    public void refresh() throws Exception {}
 
 }

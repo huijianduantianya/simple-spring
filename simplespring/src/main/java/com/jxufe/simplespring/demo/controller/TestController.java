@@ -8,24 +8,24 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.jxufe.simplespring.demo.service.IQueryService;
 import com.jxufe.simplespring.framwork.annotation.JCAutowired;
 import com.jxufe.simplespring.framwork.annotation.JCController;
 import com.jxufe.simplespring.framwork.annotation.JCRequestMapping;
 import com.jxufe.simplespring.framwork.annotation.JCRequestParam;
 import com.jxufe.simplespring.framwork.webmvc.servlet.JCModelAndView;
-import com.jxufe.simplespring.demo.service.TestService;
 
 @JCRequestMapping("/jxufe")
 @JCController
 public class TestController {
 
 	@JCAutowired
-	private TestService testService;
+	private IQueryService queryService;
 	
 	@JCRequestMapping("/sayHello")
 	public void sayHello(HttpServletRequest req, HttpServletResponse resp,@JCRequestParam("name") String name){
 		try {
-			resp.getWriter().write(testService.sayHello(name));
+			resp.getWriter().write(queryService.sayHello(name));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -57,7 +57,7 @@ public class TestController {
 	@JCRequestMapping("/query")
 	public JCModelAndView query(HttpServletRequest request, HttpServletResponse response,
 								@JCRequestParam("name") String name){
-		String result = testService.query(name);
+		String result = queryService.query(name);
 		return out(response,result);
 	}
 

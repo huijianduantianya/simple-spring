@@ -1,5 +1,6 @@
-package com.jxufe.simplespring.demo.service;
+package com.jxufe.simplespring.demo.service.imp;
 
+import com.jxufe.simplespring.demo.service.IQueryService;
 import com.jxufe.simplespring.framwork.annotation.JCService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,7 +9,7 @@ import java.util.Date;
 
 @JCService
 @Slf4j
-public class TestService {
+public class QueryService implements IQueryService {
 
 	public String sayHello(String name){
 		return "hello " + name + ",welcome to spring";
